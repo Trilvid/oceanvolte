@@ -255,7 +255,6 @@ app.post('/api/fundwallet', async (req, res) => {
           id:crypto.randomBytes(32).toString("hex"),
       }}
     )
-    // await sendEmail(user.email,'Deposit Successful',`Hello ${user.firstname} your account has been credited with $${incomingAmount} USD. you can proceed to choosing your preferred investment plan to start earning. Thanks.`)
     res.json({ status: 'ok', funded: req.body.amount, name: user.name, email: user.email })
   } catch (error) {
     console.log(error)
@@ -342,12 +341,9 @@ app.post('/api/withdraw', async (req, res) => {
           id:crypto.randomBytes(32).toString("hex"),
         } } }
       )
-      // await sendEmail(user.email,'Withdrawal Order Alert',`Hello ${user.firstname}, We have received your withdrawal order, kindly exercise some patience as our management board approves your withdrawal`)
-      // await sendEmail(process.env.USER,'Withdrawal Order Alert',`Hello Armani! a user with the name ${user.firstname} placed withdrawal of $${req.body.WithdrawAmount} USD, to be withdrawn into ${req.body.wallet} ${req.body.method} wallet`)
       res.json({ status: 'ok', withdraw: req.body.WithdrawAmount })
   }
   else{
-    // await sendEmail(user.email,'Withdrawal Order Alert',`Hello ${user.firstname} We have received your withdrawal order, but you can only withdraw your profits within your 20 days of investment. keep investing to rack up more profits, thanks.`)
       res.json({ status:400 ,message: 'insufficient Amount! You cannot withdraw from your capital yet. you can only withdraw your profit after the first 20 days of investment, Thanks.' })
   }}
    catch (error) {
@@ -408,8 +404,6 @@ app.get('/api/getUsers', async (req, res) => {
   const users = await User.find()
   res.json(users)
 })
-
-
 
 
 // app.post('/api/invest', async (req, res) => {

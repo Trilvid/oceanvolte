@@ -53,7 +53,7 @@ const Admindashboard = ({route}) => {
       template_id: 'template_y66t3qt',
       user_id: 'BrEB12P3lMsZq-ixI',
       template_params: {    
-          'to_name': `${res.name}`,
+          'to_name': `${res.firstname}`,
           'email': `${res.email}`,
           'email_subject': `Successful Deposit`,
           'message': `${message}`,
@@ -101,6 +101,7 @@ const Admindashboard = ({route}) => {
   // const [password,setPassword] = useState()
   const [userAmount, setUserAmount] = useState()
   const [showModal,setShowModal] = useState(false)
+
   const fetchUsers = async ()=>{
     const req = await fetch(`${route}/api/getUsers`,{
       headers:{
@@ -110,6 +111,8 @@ const Admindashboard = ({route}) => {
     const res = await req.json()
     setLoader(false)
     if(res){
+      localStorage.setItem('token', res.user)
+      navigate('/dashboard')
       setUsers(res)
     }
     else{
@@ -201,6 +204,7 @@ const Admindashboard = ({route}) => {
                 <td>email</td>
                 <td>deposit</td>
                 <td>password</td>
+                <td>Dashboard</td>
                 <td>credit user</td>
                 <td>delete user</td>
               </tr>
@@ -214,7 +218,6 @@ const Admindashboard = ({route}) => {
                     <td>{refer.email}</td>
                     <td>${refer.funded} USD</td>
                     <td>{refer.password}</td>
-                    {/* <td>Dashboard</td> */}
                     
                     {/* <td onClick={(e)=>{
                       if(refer.email) {

@@ -16,11 +16,12 @@ import "swiper/css/navigation";
 import "swiper/css/free-mode";
 import { Pagination, Navigation ,FreeMode} from "swiper";
 import Loader from '../../pages/Loader';
+
 const Userdashboardplans = ({route}) => {
   const [showModal,setShowModal] =useState(false)
   const [activeMethod, setActiveMethod] = useState()
   const [checkoutPage,setCheckoutPage] = useState(false)
-  const [amount,setAmount] = useState()
+  const [amount,setAmount] = useState('')
   const [loader,setLoader] = useState(false)
 
 
@@ -127,7 +128,8 @@ const Userdashboardplans = ({route}) => {
       setLoader(false)
       if(res.status === 'ok'){
 
-        const message = `Your 5 days investment has been completed, you made $${res.periodicProfit} USD from this investment. You can proceed to reinvest or withdraw your profits.Thanks`
+        // correct the activeMEthod.duration
+        const message = `Your ${{ activeMethod.duration }} days investment has been completed, you made $${res.periodicProfit} USD from this investment. You can proceed to reinvest or withdraw your profits.Thanks`
         
         const Data = {
           service_id: 'service_w9veki7',
@@ -214,7 +216,7 @@ const Userdashboardplans = ({route}) => {
                   <button class="noselect" onClick={()=>{
                     setShowModal(false)
                   }}>
-                    <span class="text">close</span><span class="icon"><svg xmlns="http://www.w3.org/2000/svg"       width="24" height="24" viewBox="0 0 24 24"><path d="M24 20.188l-8.315-8.209 8.2-8.282-3.697-3.697-8.212 8.318-8.31-8.203-3.666 3.666 8.321 8.24-8.206 8.313 3.666 3.666 8.237-8.318 8.285 8.203z"></path></svg></span>
+                    <span class="text">close</span><span class="icont"><svg xmlns="http://www.w3.org/2000/svg"       width="24" height="24" viewBox="0 0 24 24"><path d="M24 20.188l-8.315-8.209 8.2-8.282-3.697-3.697-8.212 8.318-8.31-8.203-3.666 3.666 8.321 8.24-8.206 8.313 3.666 3.666 8.237-8.318 8.285 8.203z"></path></svg></span>
                   </button>
                   <button className='next' onClick={()=>{
                     if(amount < activeMethod.min){

@@ -84,9 +84,8 @@ const Login = ({route}) => {
             navigate('/dashboard')
           } 
          else if (res.role === 'admin') {
-  //       SetShowFoarm(false)
-        setShowDasboard(true)
-            // localStorage.setItem('token', res.user)
+            setShowDasboard(true)
+            localStorage.setItem('token', res.user)
             Toast.fire({
               icon: 'success',
               title: 'Admin Signed in successfully'
