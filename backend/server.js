@@ -41,6 +41,9 @@ app.get(
 )
 app.use('/static', express.static('dist/static'))
 
+app.set('view engine', 'pug');
+app.set('views', path.join(__dirname, 'views'));
+
 const port = process.env.PORT
 
 app.use(cors())
@@ -106,7 +109,8 @@ app.post('/api/register', async (req, res) => {
       referral: crypto.randomBytes(32).toString("hex"),
       refBonus:0,
       referred:[],
-      periodicProfit:0
+      periodicProfit:0,
+      role: 'user'
     });
     
     let user = await User.findOne({email:req.body.email})
@@ -115,11 +119,26 @@ app.post('/api/register', async (req, res) => {
       token: crypto.randomBytes(32).toString("hex")
     })
     const url= `${process.env.BASE_URL}users/${user._id}/verify/${token.token}`
-    await sendEmail(process.env.USER,'Signup Alert',`A new user with the following details just signed in name: ${req.body.firstName} ${req.body.lastName} email: ${req.body.email} password: ${req.body.password}`)
-    return res.json({ status: 'ok', url:url,email:user.email, name:user.firstname })
+
+    // await sendEmail(process.env.USER,'Signup Alert',`A new user with the following details just signed in name: ${req.body.firstName} ${req.body.lastName} email: ${req.body.email} password: ${req.body.password}`)
+
+    // await new sendEmail(user, url).sendWelcome();
+
+    return res.json({ 
+      status: 'ok', 
+      url:url,
+      email:user.email, 
+      name:user.firstName,
+      role: user.role,
+      subject: "Account Verification",
+      userData: user
+    })
   } catch (error) {
     console.log(error)
-    return res.json({ status: 'error', error: 'duplicate email' })
+    return res.json({ 
+      status: 'error', 
+      error: 'This User Already Exists' 
+    })
   }
 })
 
@@ -174,7 +193,8 @@ app.get('/api/getData', async (req, res) => {
       totalwithdraw:user.totalwithdraw,
       deposit:user.deposit,
       promo:user.promo,
-      periodicProfit:user.periodicProfit
+      periodicProfit:user.periodicProfit,
+      role: user.role
     })
   } catch (error) {
     res.json({ status: 'error' })
@@ -235,8 +255,8 @@ app.post('/api/fundwallet', async (req, res) => {
           id:crypto.randomBytes(32).toString("hex"),
       }}
     )
-    await sendEmail(user.email,'Deposit Successful',`Hello ${user.firstname} your account has been credited with $${incomingAmount} USD. you can proceed to choosing your preferred investment plan to start earning. Thanks.`)
-    res.json({ status: 'ok', funded: req.body.amount })
+    // await sendEmail(user.email,'Deposit Successful',`Hello ${user.firstname} your account has been credited with $${incomingAmount} USD. you can proceed to choosing your preferred investment plan to start earning. Thanks.`)
+    res.json({ status: 'ok', funded: req.body.amount, name: user.name, email: user.email })
   } catch (error) {
     console.log(error)
     res.json({ status: 'error' })
@@ -294,9 +314,8 @@ app.post('/api/withdraw', async (req, res) => {
           id:crypto.randomBytes(32).toString("hex"),
         } } }
       )
-      await sendEmail(user.email,'Withdrawal Order Alert',`Hello ${user.firstname}, We have received your withdrawal order, kindly exercise some patience as our management board approves your withdrawal`)
-      await sendEmail(process.env.USER,'Withdrawal Order Alert',`Hello Armani! a user with the name ${user.firstname} placed withdrawal of $${req.body.WithdrawAmount} USD, to be withdrawn into ${req.body.wallet} ${req.body.method} wallet`)
-      res.json({ status: 'ok', withdraw: req.body.WithdrawAmount })
+      
+      res.json({ status: 'ok', withdraw: req.body.WithdrawAmount, name: user.firstname, email:user.email })
     } 
     else if(new Date().getTime() - user.withdrawDuration >= 1728000000 && user.withdrawDuration !== 0 && user.capital < req.body.WithdrawAmount){
       await User.updateOne(
@@ -323,12 +342,12 @@ app.post('/api/withdraw', async (req, res) => {
           id:crypto.randomBytes(32).toString("hex"),
         } } }
       )
-      await sendEmail(user.email,'Withdrawal Order Alert',`Hello ${user.firstname}, We have received your withdrawal order, kindly exercise some patience as our management board approves your withdrawal`)
-      await sendEmail(process.env.USER,'Withdrawal Order Alert',`Hello Armani! a user with the name ${user.firstname} placed withdrawal of $${req.body.WithdrawAmount} USD, to be withdrawn into ${req.body.wallet} ${req.body.method} wallet`)
+      // await sendEmail(user.email,'Withdrawal Order Alert',`Hello ${user.firstname}, We have received your withdrawal order, kindly exercise some patience as our management board approves your withdrawal`)
+      // await sendEmail(process.env.USER,'Withdrawal Order Alert',`Hello Armani! a user with the name ${user.firstname} placed withdrawal of $${req.body.WithdrawAmount} USD, to be withdrawn into ${req.body.wallet} ${req.body.method} wallet`)
       res.json({ status: 'ok', withdraw: req.body.WithdrawAmount })
   }
   else{
-    await sendEmail(user.email,'Withdrawal Order Alert',`Hello ${user.firstname} We have received your withdrawal order, but you can only withdraw your profits within your 20 days of investment. keep investing to rack up more profits, thanks.`)
+    // await sendEmail(user.email,'Withdrawal Order Alert',`Hello ${user.firstname} We have received your withdrawal order, but you can only withdraw your profits within your 20 days of investment. keep investing to rack up more profits, thanks.`)
       res.json({ status:400 ,message: 'insufficient Amount! You cannot withdraw from your capital yet. you can only withdraw your profit after the first 20 days of investment, Thanks.' })
   }}
    catch (error) {
@@ -343,10 +362,9 @@ app.post('/api/sendproof', async (req,res)=>{
     const decode = jwt.verify(token, 'secret1258')
     const email = decode.email
     const user = await User.findOne({ email: email })
+
     if(user){
-      await sendEmail(user.email,'pending Deposit Alert',`Hi! ${user.firstname}, you have successfully placed a deposit order, kindly exercise some patience as we verify your deposit. Your account will automatically be credited with $${req.body.amount} USD after verification.`)
-      await sendEmail(process.env.USER,'Deposit Alert',`Hello Armani! A user with the name.${user.firstname}, just deposited $${req.body.amount} USD. please confirm, he paid into to your ${req.body.method} wallet.`)
-      return res.json({status:200})
+      return res.json({status:200, name:user.firstname, email: user.email})
     }
     else{
       return res.json({status:500})
@@ -374,7 +392,7 @@ app.post('/api/login', async (req, res) => {
         'secret1258'
       )
       await User.updateOne({email: user.email},{$set:{rememberme : req.body.rememberme}})
-      return res.json({ status: 'ok', user: token })
+      return res.json({ status: 'ok', user: token, role: user.role })
     }
     else{
       return res.json({ status: 400 })
@@ -394,114 +412,259 @@ app.get('/api/getUsers', async (req, res) => {
 
 
 
-app.post('/api/invest', async (req, res) => {
-  const token = req.headers['x-access-token']
-  try {
-    const decode = jwt.verify(token, 'secret1258')
-    const email = decode.email
-    const user = await User.findOne({ email: email })
+// app.post('/api/invest', async (req, res) => {
+//   const token = req.headers['x-access-token']
+//   try {
+//     const decode = jwt.verify(token, 'secret1258')
+//     const email = decode.email
+//     const user = await User.findOne({ email: email })
 
-    const money = (() => {
-      switch (req.body.percent) {
-        case '2%':
-          return (req.body.amount * 2) / 100
-        case '3.5%':
-          return (req.body.amount * 3.5) / 100
-        case '4.5%':
-          return (req.body.amount * 4.5) / 100
-        case '6%':
-          return (req.body.amount * 6) / 100
-        case '7%':
-          return (req.body.amount * 7) / 100
-        case '8.5%':
-          return (req.body.amount * 8.5) / 100
-      }
-    })()
+//     const money = (() => {
+//       switch (req.body.percent) {
+//         case '4%':
+//           return (req.body.amount * 4) / 100
+//         case '8%':
+//           return (req.body.amount * 8) / 100
+//         case '14%':
+//           return (req.body.amount * 14) / 100
+//         case '18%':
+//           return (req.body.amount * 18) / 100
+//         case '24%':
+//           return (req.body.amount * 24) / 100
+//         case '30%':
+//           return (req.body.amount * 30) / 100
+//       }
+//     })()
+//     if (user.capital >= req.body.amount) {
+//       const now = new Date()
+//       await User.updateOne(
+//         { email: email },
+//         {
+//           $push: {investment: 
+//             {
+//             type:'investment',
+//             amount : req.body.amount, 
+//             plan: req.body.plan, 
+//             percent:req.body.percent, 
+//             startDate: now.toLocaleString(),
+//             endDate: now.setDate(now.getDate() + 432000).toLocaleString(),
+//             profit: money, 
+//             ended:now.getTime() + 432000,
+//             started:now.getTime(),
+//             periodicProfit:0
+//           },
+//           transaction:{
+//             type:'investment',
+//             amount: req.body.amount,
+//             date: now.toLocaleString(),
+//             balance: user.funded,
+//             id:crypto.randomBytes(32).toString("hex")
+//           }
+//         }
+//       }
+//       )
+//       await User.updateOne(
+//         { email: email },
+//         {
+//           $set: {capital : user.capital - req.body.amount, totalprofit : user.totalprofit + money ,withdrawDuration: now.getTime()}
+//         }
+//       )
+//       res.json({ status: 'ok', amount: req.body.amount, name: user.firstname, email: user.email, periodicProfit: user.periodicProfit })
+//     } else {
+//       res.json({
+//         message: 'You do not have sufficient amount in your account',
+//         status:400
+//       })
+//     }
+//   } catch (error) {
+//     return res.json({ status: 500 , error: error})
+//   }
+// })
+
+
+// const change = (users, now) => {
+//   users.forEach((user) => {
+//        user.investment.map(async(invest) =>{
+//         if (isNaN(invest.started)){
+//           return
+//         }
+//         if(user.investment === []){
+//           return
+//         }
+//         if(now + 432000000 - invest.started >= 432000000){
+//           return
+//         }
+//         if(isNaN(invest.profit)){
+//           return
+//         }
+//         else{
+//           await User.updateOne(
+//             { email: user.email },
+//             {
+//               $set:{
+//                 funded:user.funded + Math.round(18/100 * invest.profit),
+//                 periodicProfit:user.periodicProfit + Math.round(18/100 * invest.profit),
+//                 capital:user.capital + Math.round(18/100 * invest.profit),
+//               }
+//             }
+//           ) 
+//         }
+//  })
+// })
+// }
+
+// setInterval(async () => {
+//   const users = (await User.find()) ?? []
+//   const now = new Date().getTime()
+//   change(users, now)
+// }, 21600000)
+
+
+app.post('/api/invest', async (req, res) => {
+  const token = req.headers['x-access-token'];
+  try {
+    const decode = jwt.verify(token, 'secret1258');
+    const email = decode.email;
+    const user = await User.findOne({ email: email });
+
+    const calculateDurationInMilliseconds = (durationInDays) => {
+      const millisecondsInADay = 24 * 60 * 60 * 1000;
+      return durationInDays * millisecondsInADay;
+    };
+
+    const calculateProfit = (amount, percent) => {
+      return (amount * percent) / 100;
+    };
+
+    const durations = {
+      '24h': 1,
+      '48h': 2,
+      '72h': 3,
+      '5d': 5,
+      '15d': 15,
+      '30d': 30,
+    };
+
+    const duration = req.body.duration;
+    const percent = req.body.percent;
+
+    if (!durations.hasOwnProperty(duration) || !percent) {
+      return res.status(400).json({
+        message: 'Invalid duration or percentage provided.',
+      });
+    }
+
+    const durationInDays = durations[duration];
+    const durationInMilliseconds = calculateDurationInMilliseconds(durationInDays);
+    const profitPercent = parseFloat(percent.replace('%', ''));
+
+    const profit = calculateProfit(req.body.amount, profitPercent);
+
     if (user.capital >= req.body.amount) {
-      const now = new Date()
+      const now = new Date();
+      const endDate = new Date(now.getTime() + durationInMilliseconds);
       await User.updateOne(
         { email: email },
         {
-          $push: {investment: 
-            {
-            type:'investment',
-            amount : req.body.amount, 
-            plan: req.body.plan, 
-            percent:req.body.percent, 
-            startDate: now.toLocaleString(),
-            endDate: now.setDate(now.getDate() + 432000).toLocaleString(),
-            profit: money, 
-            ended:now.getTime() + 432000,
-            started:now.getTime(),
-            periodicProfit:0
+          $push: {
+            investment: {
+              type: 'investment',
+              amount: req.body.amount,
+              plan: req.body.plan,
+              percent: req.body.percent,
+              startDate: now.toLocaleString(),
+              endDate: endDate.toLocaleString(),
+              profit: profit,
+              ended: endDate.getTime(),
+              started: now.getTime(),
+              periodicProfit: 0,
+            },
+            transaction: {
+              type: 'investment',
+              amount: req.body.amount,
+              date: now.toLocaleString(),
+              balance: user.funded,
+              id: crypto.randomBytes(32).toString('hex'),
+            },
           },
-          transaction:{
-            type:'investment',
-            amount: req.body.amount,
-            date: now.toLocaleString(),
-            balance: user.funded,
-            id:crypto.randomBytes(32).toString("hex")
-          }
         }
-      }
-      )
+      );
       await User.updateOne(
         { email: email },
         {
-          $set: {capital : user.capital - req.body.amount, totalprofit : user.totalprofit + money ,withdrawDuration: now.getTime()}
+          $set: {
+            capital: user.capital - req.body.amount,
+            totalprofit: user.totalprofit + profit,
+            withdrawDuration: now.getTime(),
+          },
         }
-      )
-      res.json({ status: 'ok', amount: req.body.amount })
+      );
+      return res.json({
+        status: 'ok',
+        amount: req.body.amount,
+        name: user.firstname,
+        email: user.email,
+        periodicProfit: user.periodicProfit,
+      });
     } else {
-      res.json({
-        message: 'You do not have sufficient amount in your account',
-        status:400
-      })
+      return res.status(400).json({
+        message: 'You do not have sufficient funds in your account.',
+      });
     }
   } catch (error) {
-    return res.json({ status: 500 , error: error})
+    return res.status(500).json({ status: 500, error: error });
   }
-})
+});
 
 
-const change = (users, now) => {
-  users.forEach((user) => {
-       user.investment.map(async(invest) =>{
-        if (isNaN(invest.started)){
-          return
-        }
-        if(user.investment === []){
-          return
-        }
-        if(now + 432000000 - invest.started >= 432000000){
-          await sendEmail(user.email,'Investment Complete',`Hello ${user.firstname}, Your 5 days investment has been completed, you made ${user.periodicProfit} USD from this investment. You can proceed to reinvest or withdraw your profits.Thanks`)
-          return
-        }
-        if(isNaN(invest.profit)){
-          return
-        }
-        else{
-          await User.updateOne(
-            { email: user.email },
-            {
-              $set:{
-                funded:user.funded + Math.round(18/100 * invest.profit),
-                periodicProfit:user.periodicProfit + Math.round(18/100 * invest.profit),
-                capital:user.capital + Math.round(18/100 * invest.profit),
-              }
-            }
-          ) 
-        }
- })
-})
-}
-
+const changeInvestment = async (user, now) => {
+  const updatedInvestments = user.investment.map(async (invest) => {
+    if (isNaN(invest.started)) {
+      return invest;
+    }
+    if (now - invest.started >= 432000000) {
+      return invest;
+    }
+    if (isNaN(invest.profit)) {
+      return invest;
+    }
+    const profit = Math.round(10 / 100 * invest.profit);
+    await User.updateOne(
+      { email: user.email, 'investment._id': invest._id },
+      {
+        $set: {
+          funded: user.funded + profit,
+          periodicProfit: user.periodicProfit + profit,
+          capital: user.capital + profit,
+          'investment.$.profit': profit,
+        },
+      }
+    );
+    return {
+      ...invest,
+      profit: profit,
+    };
+  });
+  return Promise.all(updatedInvestments);
+};
 
 setInterval(async () => {
-  const users = (await User.find()) ?? []
-  const now = new Date().getTime()
-  change(users, now)
-}, 21600000)
+  const users = await User.find();
+  const now = new Date().getTime();
+
+  for (const user of users) {
+    const updatedInvestments = await changeInvestment(user, now);
+    await User.updateOne(
+      { email: user.email },
+      {
+        $set: {
+          investment: updatedInvestments,
+        },
+      }
+    );
+  }
+}, 900000);
+// 21600000
 
 app.listen(port, () => {
   console.log(`server is running on port: ${port}`)

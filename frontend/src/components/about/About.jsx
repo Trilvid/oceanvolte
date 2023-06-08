@@ -13,8 +13,8 @@ const About = () => {
             </div>
             <h1 data-aos="fade-up">learn more about OceanVolte</h1>
             <p data-aos="fade-up">
-                OceanVolte is an online platform that maximizes the slight differences in prices of global forex exchange rate and investment in real estate, crude oil and agriculture to inturn satisfy her clients. We also help to manage and save our client's funds for future use, ready to be withdrawn at any point. <br />
-                we have very experienced experts and agents in the above mentioned areas of investment, so be rest assured that your investments are very safe with us.
+            At OceanVolte, we believe in building long-term relationships based on trust, transparency, and mutual growth. We take the time to listen and understand your unique financial objectives, tailoring our services to meet your specific needs. Whether you are an experienced investor looking to expand your portfolio or a novice seeking guidance, we are committed to providing personalized attention and crafting strategies that align with your goals.
+
             </p>
             <button className='launch-btn launch' data-aos="fade-up" onClick={()=>{
                 navigate('/about')
