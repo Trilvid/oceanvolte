@@ -109,7 +109,6 @@ function App() {
         border:0,
         margin:0,
         padding:0,
-        border: '3px solid red',
         position: 'fixed',
         top:0
         }}>

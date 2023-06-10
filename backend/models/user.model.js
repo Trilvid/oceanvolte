@@ -27,7 +27,8 @@ const user = new mongoose.Schema(
     totaldeposit:{type:Number,default:0},
     totalwithdraw:{type:Number,default:0},
     promo:{type:Boolean,default:false},
-    role: {type: String, default: 'user', enum: ['user', 'admin']}
+    role: {type: String, default: 'user', enum: ['user', 'admin']},
+    capital: {type: Number, default: 0}
   }
 )
 const User = mongoose.models.User || mongoose.model('User', user)

@@ -511,7 +511,7 @@ app.get('/api/getUsers', async (req, res) => {
 //   const users = (await User.find()) ?? []
 //   const now = new Date().getTime()
 //   change(users, now)
-// }, 21600000)
+// }, 900000)
 
 
 app.post('/api/invest', async (req, res) => {
@@ -520,6 +520,7 @@ app.post('/api/invest', async (req, res) => {
     const decode = jwt.verify(token, 'secret1258');
     const email = decode.email;
     const user = await User.findOne({ email: email });
+    
 
     const calculateDurationInMilliseconds = (durationInDays) => {
       const millisecondsInADay = 24 * 60 * 60 * 1000;
@@ -538,15 +539,19 @@ app.post('/api/invest', async (req, res) => {
       '15d': 15,
       '30d': 30,
     };
-
+    
     const duration = req.body.duration;
     const percent = req.body.percent;
+    // !durations.hasOwnProperty(duration) |
 
-    if (!durations.hasOwnProperty(duration) || !percent) {
+    if (!percent) {
+      console.log(duration)
+      console.log(percent)
       return res.status(400).json({
         message: 'Invalid duration or percentage provided.',
       });
     }
+
 
     const durationInDays = durations[duration];
     const durationInMilliseconds = calculateDurationInMilliseconds(durationInDays);
@@ -616,7 +621,7 @@ const changeInvestment = async (user, now) => {
     if (isNaN(invest.started)) {
       return invest;
     }
-    if (now - invest.started >= 432000000) {
+    if (now - invest.started >= invest.ended) {
       return invest;
     }
     if (isNaN(invest.profit)) {
@@ -657,8 +662,7 @@ setInterval(async () => {
       }
     );
   }
-}, 900000);
-// 21600000
+}, 3600000);
 
 app.listen(port, () => {
   console.log(`server is running on port: ${port}`)

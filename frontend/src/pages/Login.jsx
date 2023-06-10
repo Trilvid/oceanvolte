@@ -83,7 +83,7 @@ const Login = ({route}) => {
             })
             navigate('/dashboard')
           } 
-         else if (res.role === 'admin') {
+         else if (res.status === 'ok' && res.role === 'admin') {
             setShowDasboard(true)
             localStorage.setItem('token', res.user)
             Toast.fire({
