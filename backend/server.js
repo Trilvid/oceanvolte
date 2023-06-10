@@ -405,122 +405,12 @@ app.get('/api/getUsers', async (req, res) => {
   res.json(users)
 })
 
-
-// app.post('/api/invest', async (req, res) => {
-//   const token = req.headers['x-access-token']
-//   try {
-//     const decode = jwt.verify(token, 'secret1258')
-//     const email = decode.email
-//     const user = await User.findOne({ email: email })
-
-//     const money = (() => {
-//       switch (req.body.percent) {
-//         case '4%':
-//           return (req.body.amount * 4) / 100
-//         case '8%':
-//           return (req.body.amount * 8) / 100
-//         case '14%':
-//           return (req.body.amount * 14) / 100
-//         case '18%':
-//           return (req.body.amount * 18) / 100
-//         case '24%':
-//           return (req.body.amount * 24) / 100
-//         case '30%':
-//           return (req.body.amount * 30) / 100
-//       }
-//     })()
-//     if (user.capital >= req.body.amount) {
-//       const now = new Date()
-//       await User.updateOne(
-//         { email: email },
-//         {
-//           $push: {investment: 
-//             {
-//             type:'investment',
-//             amount : req.body.amount, 
-//             plan: req.body.plan, 
-//             percent:req.body.percent, 
-//             startDate: now.toLocaleString(),
-//             endDate: now.setDate(now.getDate() + 432000).toLocaleString(),
-//             profit: money, 
-//             ended:now.getTime() + 432000,
-//             started:now.getTime(),
-//             periodicProfit:0
-//           },
-//           transaction:{
-//             type:'investment',
-//             amount: req.body.amount,
-//             date: now.toLocaleString(),
-//             balance: user.funded,
-//             id:crypto.randomBytes(32).toString("hex")
-//           }
-//         }
-//       }
-//       )
-//       await User.updateOne(
-//         { email: email },
-//         {
-//           $set: {capital : user.capital - req.body.amount, totalprofit : user.totalprofit + money ,withdrawDuration: now.getTime()}
-//         }
-//       )
-//       res.json({ status: 'ok', amount: req.body.amount, name: user.firstname, email: user.email, periodicProfit: user.periodicProfit })
-//     } else {
-//       res.json({
-//         message: 'You do not have sufficient amount in your account',
-//         status:400
-//       })
-//     }
-//   } catch (error) {
-//     return res.json({ status: 500 , error: error})
-//   }
-// })
-
-
-// const change = (users, now) => {
-//   users.forEach((user) => {
-//        user.investment.map(async(invest) =>{
-//         if (isNaN(invest.started)){
-//           return
-//         }
-//         if(user.investment === []){
-//           return
-//         }
-//         if(now + 432000000 - invest.started >= 432000000){
-//           return
-//         }
-//         if(isNaN(invest.profit)){
-//           return
-//         }
-//         else{
-//           await User.updateOne(
-//             { email: user.email },
-//             {
-//               $set:{
-//                 funded:user.funded + Math.round(18/100 * invest.profit),
-//                 periodicProfit:user.periodicProfit + Math.round(18/100 * invest.profit),
-//                 capital:user.capital + Math.round(18/100 * invest.profit),
-//               }
-//             }
-//           ) 
-//         }
-//  })
-// })
-// }
-
-// setInterval(async () => {
-//   const users = (await User.find()) ?? []
-//   const now = new Date().getTime()
-//   change(users, now)
-// }, 900000)
-
-
 app.post('/api/invest', async (req, res) => {
   const token = req.headers['x-access-token'];
   try {
     const decode = jwt.verify(token, 'secret1258');
     const email = decode.email;
     const user = await User.findOne({ email: email });
-    
 
     const calculateDurationInMilliseconds = (durationInDays) => {
       const millisecondsInADay = 24 * 60 * 60 * 1000;
@@ -539,19 +429,16 @@ app.post('/api/invest', async (req, res) => {
       '15d': 15,
       '30d': 30,
     };
-    
+
     const duration = req.body.duration;
     const percent = req.body.percent;
-    // !durations.hasOwnProperty(duration) |
-
+    console.log({ duration, percent })
+    // !durations.hasOwnProperty(duration) ||
     if (!percent) {
-      console.log(duration)
-      console.log(percent)
       return res.status(400).json({
         message: 'Invalid duration or percentage provided.',
       });
     }
-
 
     const durationInDays = durations[duration];
     const durationInMilliseconds = calculateDurationInMilliseconds(durationInDays);
@@ -621,12 +508,57 @@ const changeInvestment = async (user, now) => {
     if (isNaN(invest.started)) {
       return invest;
     }
+    if (user.investment === []) {
+        return
+    }
     if (now - invest.started >= invest.ended) {
       return invest;
     }
     if (isNaN(invest.profit)) {
+        return
+    }
+    if (isNaN(invest.profit)) {
       return invest;
     }
+    
+if (invest.profit <= 14) {
+  console.log(user.funded)
+  await User.updateOne(
+    { email: user.email },
+    {
+      $set: {
+        funded: user.funded + Math.round(11 / 100 * invest.profit),
+        periodicProfit: user.periodicProfit + Math.round(11 / 100 * invest.profit),
+        capital: user.capital + Math.round(11 / 100 * invest.profit),
+      }
+    }
+  )
+}
+// if(invest.profit > 14 && invest.profit <= 40){
+//     console.log(user.funded)
+//     await User.updateOne(
+//       { email: user.email },
+//       {
+//         $set:{
+//           funded:user.funded + Math.round(6/100 * invest.profit),
+//           periodicProfit:user.periodicProfit + Math.round(6/100 * invest.profit),
+//           capital:user.capital + Math.round(6/100 * invest.profit),
+//         }
+//       }
+//     )
+//   }
+//   else{
+//     await User.updateOne(
+//       { email: user.email },
+//       {
+//         $set:{
+//           funded:user.funded + Math.round(4.5/100 * invest.profit),
+//           periodicProfit:user.periodicProfit + Math.round(4.5/100 * invest.profit),
+//           capital:user.capital + Math.round(4.5/100 * invest.profit),
+//         }
+//       }
+//     )
+//   }
     const profit = Math.round(10 / 100 * invest.profit);
     await User.updateOne(
       { email: user.email, 'investment._id': invest._id },
@@ -647,10 +579,13 @@ const changeInvestment = async (user, now) => {
   return Promise.all(updatedInvestments);
 };
 
-setInterval(async () => {
-  const users = await User.find();
-  const now = new Date().getTime();
-
+api.get('api/cron', async (req, res) => {
+    try {
+    mongoose.connect(process.env.ATLAS_URI)
+    const users = (await User.find()) ?? []
+    const now = new Date().getTime()
+    // changeInvestment(users, now)
+    
   for (const user of users) {
     const updatedInvestments = await changeInvestment(user, now);
     await User.updateOne(
@@ -662,7 +597,162 @@ setInterval(async () => {
       }
     );
   }
-}, 3600000);
+    return res.json({status:200})
+  } catch (error) {
+    console.log(error)
+    return res.json({status:500})
+  }
+})
+
+// app.post('/api/invest', async (req, res) => {
+//   const token = req.headers['x-access-token'];
+//   try {
+//     const decode = jwt.verify(token, 'secret1258');
+//     const email = decode.email;
+//     const user = await User.findOne({ email: email });
+    
+
+//     const calculateDurationInMilliseconds = (durationInDays) => {
+//       const millisecondsInADay = 24 * 60 * 60 * 1000;
+//       return durationInDays * millisecondsInADay;
+//     };
+
+//     const calculateProfit = (amount, percent) => {
+//       return (amount * percent) / 100;
+//     };
+
+//     const durations = {
+//       '24h': 1,
+//       '48h': 2,
+//       '72h': 3,
+//       '5d': 5,
+//       '15d': 15,
+//       '30d': 30,
+//     };
+    
+//     const duration = req.body.duration;
+//     const percent = req.body.percent;
+//     // !durations.hasOwnProperty(duration) |
+
+//     if (!percent) {
+//       console.log(duration)
+//       console.log(percent)
+//       return res.status(400).json({
+//         message: 'Invalid duration or percentage provided.',
+//       });
+//     }
+
+
+//     const durationInDays = durations[duration];
+//     const durationInMilliseconds = calculateDurationInMilliseconds(durationInDays);
+//     const profitPercent = parseFloat(percent.replace('%', ''));
+
+//     const profit = calculateProfit(req.body.amount, profitPercent);
+
+//     if (user.capital >= req.body.amount) {
+//       const now = new Date();
+//       const endDate = new Date(now.getTime() + durationInMilliseconds);
+//       await User.updateOne(
+//         { email: email },
+//         {
+//           $push: {
+//             investment: {
+//               type: 'investment',
+//               amount: req.body.amount,
+//               plan: req.body.plan,
+//               percent: req.body.percent,
+//               startDate: now.toLocaleString(),
+//               endDate: endDate.toLocaleString(),
+//               profit: profit,
+//               ended: endDate.getTime(),
+//               started: now.getTime(),
+//               periodicProfit: 0,
+//             },
+//             transaction: {
+//               type: 'investment',
+//               amount: req.body.amount,
+//               date: now.toLocaleString(),
+//               balance: user.funded,
+//               id: crypto.randomBytes(32).toString('hex'),
+//             },
+//           },
+//         }
+//       );
+//       await User.updateOne(
+//         { email: email },
+//         {
+//           $set: {
+//             capital: user.capital - req.body.amount,
+//             totalprofit: user.totalprofit + profit,
+//             withdrawDuration: now.getTime(),
+//           },
+//         }
+//       );
+//       return res.json({
+//         status: 'ok',
+//         amount: req.body.amount,
+//         name: user.firstname,
+//         email: user.email,
+//         periodicProfit: user.periodicProfit,
+//       });
+//     } else {
+//       return res.status(400).json({
+//         message: 'You do not have sufficient funds in your account.',
+//       });
+//     }
+//   } catch (error) {
+//     return res.status(500).json({ status: 500, error: error });
+//   }
+// });
+
+
+// const changeInvestment = async (user, now) => {
+//   const updatedInvestments = user.investment.map(async (invest) => {
+//     if (isNaN(invest.started)) {
+//       return invest;
+//     }
+//     if (now - invest.started >= invest.ended) {
+//       return invest;
+//     }
+//     if (isNaN(invest.profit)) {
+//       return invest;
+//     }
+//     const profit = Math.round(10 / 100 * invest.profit);
+//     await User.updateOne(
+//       { email: user.email, 'investment._id': invest._id },
+//       {
+//         $set: {
+//           funded: user.funded + profit,
+//           periodicProfit: user.periodicProfit + profit,
+//           capital: user.capital + profit,
+//           'investment.$.profit': profit,
+//         },
+//       }
+//     );
+//     return {
+//       ...invest,
+//       profit: profit,
+//     };
+//   });
+//   return Promise.all(updatedInvestments);
+// };
+
+// setInterval(async () => {
+//   const users = await User.find();
+//   const now = new Date().getTime();
+
+//   for (const user of users) {
+//     const updatedInvestments = await changeInvestment(user, now);
+//     await User.updateOne(
+//       { email: user.email },
+//       {
+//         $set: {
+//           investment: updatedInvestments,
+//         },
+//       }
+//     );
+//   }
+// }, 3600000);
 
 app.listen(port, () => {
   console.log(`server is running on port: ${port}`)
